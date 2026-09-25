@@ -1,0 +1,10 @@
+.env
+*.log
+*.bak
+.DS_Store
+Thumbs.db
+bin/
+config/cache.db
+config/ui/
+config/*.mmdb
+config/*.dat
