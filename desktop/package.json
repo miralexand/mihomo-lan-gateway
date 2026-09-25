@@ -1,6 +1,6 @@
 {
   "name": "mihomo-gateway-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "mihomo LAN proxy gateway desktop controller",
   "main": "src/main.js",
   "author": "mihomo-lan-gateway",

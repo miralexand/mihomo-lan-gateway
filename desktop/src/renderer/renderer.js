@@ -67,6 +67,17 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
+function fuzzyMatch(needle, haystack) {
+  if (!needle) return true;
+  const h = String(haystack || "").toLowerCase();
+  if (h.includes(needle)) return true;
+  let i = 0;
+  for (let j = 0; j < h.length && i < needle.length; j++) {
+    if (h[j] === needle[i]) i++;
+  }
+  return i === needle.length;
+}
+
 /* ---------------- toast ---------------- */
 
 let toastTimer = null;
@@ -188,18 +199,23 @@ function ingestConnections(list) {
 
 let connSearchTerm = "";
 function renderConnections() {
-  const filter = connSearchTerm.toLowerCase();
+  const terms = connSearchTerm.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const activeOnly = $("#connActiveOnly").checked;
   const entries = Array.from(connMap.values())
     .filter((e) => (activeOnly ? !e.closed : true))
     .filter((e) => {
-      if (!filter) return true;
+      if (!terms.length) return true;
       const c = e.data;
-      return (
-        (c.host || "").toLowerCase().includes(filter) ||
-        (c.rule || "").toLowerCase().includes(filter) ||
-        (c.chains || []).join(" ").toLowerCase().includes(filter)
-      );
+      const haystack = [
+        c.host,
+        c.dest,
+        c.source,
+        c.network,
+        c.rule,
+        c.rulePayload,
+        (c.chains || []).join(" "),
+      ].join(" ");
+      return terms.every((t) => fuzzyMatch(t, haystack));
     })
     .sort((a, b) => (a.closed === b.closed ? b.lastSeen - a.lastSeen : a.closed ? 1 : -1));
 
