@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
   [string]$Version = "",
-  [string]$Proxy = "https://gh-proxy.com/"
+  [string]$Proxy = "https://gh-proxy.com/",
+  [string]$Token = $env:GITHUB_TOKEN
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,10 +10,13 @@ $root = Split-Path $PSScriptRoot -Parent
 $binDir = Join-Path $root "bin"
 New-Item -ItemType Directory -Force -Path $binDir | Out-Null
 
+$headerArgs = @()
+if ($Token) { $headerArgs = @("-H", "Authorization: Bearer $Token") }
+
 if (-not $Version) {
   $api = "${Proxy}https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
   Write-Output "Resolving latest version from $api"
-  $tag = (curl.exe -s -L --max-time 60 $api | ConvertFrom-Json).tag_name
+  $tag = (curl.exe -s -L --max-time 60 @headerArgs $api | ConvertFrom-Json).tag_name
   if (-not $tag) { throw "Failed to resolve latest version" }
   $Version = $tag
 }
