@@ -1,0 +1,18 @@
+{
+  "name": "mihomo-gateway-desktop",
+  "version": "1.0.0",
+  "description": "mihomo LAN proxy gateway desktop controller",
+  "main": "src/main.js",
+  "author": "mihomo-lan-gateway",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win portable nsis"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  }
+}

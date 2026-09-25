@@ -8,3 +8,7 @@ config/cache.db
 config/ui/
 config/*.mmdb
 config/*.dat
+
+# desktop app
+desktop/node_modules/
+desktop/dist/

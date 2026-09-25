@@ -1,0 +1,49 @@
+appId: com.mihomo.lan.gateway
+productName: MihomoGateway
+copyright: Copyright © 2026 mihomo-lan-gateway
+
+directories:
+  output: dist
+  buildResources: build
+
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+
+files:
+  - src/**/*
+  - package.json
+  - build/icon.png
+  - "!**/*.map"
+
+extraResources:
+  - from: ../bin/mihomo.exe
+    to: core/mihomo.exe
+  - from: ../config/config.yaml
+    to: seed/config.yaml
+  - from: ../config/ui
+    to: seed/ui
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.png
+
+portable:
+  artifactName: ${productName}-${version}-portable.exe
+  requestExecutionLevel: admin
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Mihomo Gateway
+  artifactName: ${productName}-${version}-setup.exe
+
+publish: null

@@ -2,6 +2,8 @@
 
 使用 Docker 部署 [mihomo](https://github.com/MetaCubeX/mihomo) 内核，把宿主机（可访问外网）变成局域网的代理网关。内网设备只需把系统/浏览器代理设置为 `宿主机IP:7890`，即可通过宿主机的网络访问外网。
 
+> 不想碰 Docker / 命令行？直接用 [`desktop/` 桌面版](#桌面版推荐)：一个 exe，打开就是开关、日志、流量与连接统计，内核和面板都已内置。
+
 ## 原理
 
 ```
@@ -35,11 +37,60 @@
 │   ├── fetch-mihomo.ps1      # 下载 mihomo 内核（Windows 原生）
 │   ├── run-native.ps1        # 原生运行（Windows）
 │   ├── install-service.ps1   # 注册开机自启（Windows）
-│   └── uninstall-service.ps1 # 卸载开机自启（Windows）
+│   ├── uninstall-service.ps1 # 卸载开机自启（Windows）
+│   ├── build-desktop.ps1     # 一键构建桌面版 exe（Windows）
+│   └── run-desktop.ps1       # 开发模式启动桌面版（Windows）
+├── desktop/             # 桌面控制台（Electron 源码）
+│   ├── src/             # 主进程 / 预加载 / 渲染界面
+│   ├── build/icon.png   # 应用图标
+│   ├── electron-builder.yml
+│   ├── package.json
+│   └── dist/            # 打包产物（不入库）
 ├── bin/                 # 原生内核存放处（不入库）
 ├── .gitignore
 └── README.md
 ```
+
+## 桌面版（推荐）
+
+`desktop/` 是一个基于 Electron 的图形控制台，把「开关代理服务器 / 看日志 / 看流量与连接 / 改设置」全部收进一个 exe。内核（`mihomo.exe`）、默认配置与面板都已内置，**双击即用，无需 Docker、无需命令行**。
+
+### 功能
+
+- **一键开关**：顶部大开关启动 / 停止内核，实时显示运行状态、PID、运行时长；托盘图标右键也能启停。
+- **实时数据**：下载 / 上传速度、累计流量、活动连接数、内核内存占用。
+- **连接列表**：每条连接的主机、目标、来源、命中规则、代理链路与流量，支持筛选。
+- **运行日志**：内核日志实时滚动，可按级别（info/warning/error/debug）过滤、搜索、清空。
+- **接入信息**：自动列出本机局域网 IP 对应的 HTTP+SOCKS5 混合端口，一键复制；一键打开内置 metacubexd 面板。
+- **设置页**：端口、Secret、allow-lan、IPv6、运行模式、日志级别、开机自启，保存后可选择立即重启内核；支持导入 / 编辑配置文件。
+- **系统信息**：主机名、当前用户、操作系统、CPU 核心数、物理内存、内核版本。
+
+### 直接使用（不需要自己构建）
+
+运行构建产出即可（见下节），或直接双击：
+
+- `MihomoGateway-<版本>-portable.exe`：单文件便携版，双击运行，适合放 U 盘。
+- `MihomoGateway-<版本>-setup.exe`：安装版，自动创建开始菜单与桌面快捷方式。
+
+首次启动会把内置配置与面板释放到 `%APPDATA%\mihomo-gateway-desktop\data\`，之后所有修改都保存在该目录，升级 exe 不影响配置。
+
+> 便携版 / 安装版默认以管理员权限运行，以便内核绑定 7890/7891/9090 并自动放行 Windows 防火墙。
+
+### 自己构建
+
+```powershell
+# 一键构建（自动准备内核与面板、安装依赖、打包 exe）
+.\scripts\build-desktop.ps1
+```
+
+产物在 `desktop\dist\`。开发调试（热启动，不打包）：
+
+```powershell
+.\scripts\run-desktop.ps1              # 只开界面
+.\scripts\run-desktop.ps1 -StartCore   # 开界面并自动启动代理
+```
+
+> 打包默认使用 npmmirror 镜像下载 Electron 二进制。若在可直连 GitHub 的网络，可删除 `scripts\build-desktop.ps1` 中的 `ELECTRON_MIRROR` / `ELECTRON_BUILDER_BINARIES_MIRROR`。
 
 ## 前置要求
 

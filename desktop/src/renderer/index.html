@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
+  <title>Mihomo Gateway</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">M</div>
+        <div class="brand-text">
+          <strong>Mihomo</strong>
+          <span>LAN Gateway</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="overview"><span>▊</span>概览</button>
+        <button class="nav-item" data-view="connections"><span>⇄</span>连接</button>
+        <button class="nav-item" data-view="logs"><span>≡</span>日志</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span>设置</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="sideStatusDot" class="dot stopped"></div>
+        <div>
+          <div id="sideStatusText">已停止</div>
+          <div id="sidePid" class="muted">--</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <div id="statusDot" class="dot stopped"></div>
+          <div>
+            <div id="statusTitle" class="status-title">代理服务器已停止</div>
+            <div id="statusSub" class="muted">点击右侧开关启动内核</div>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <button id="btnRestart" class="btn ghost" title="重启内核">↻ 重启</button>
+          <label class="switch" title="代理服务器开关">
+            <input type="checkbox" id="powerToggle" />
+            <span class="slider"></span>
+          </label>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- ============ OVERVIEW ============ -->
+        <section id="view-overview" class="view active">
+          <div class="cards">
+            <div class="card stat">
+              <div class="stat-label">下载速度</div>
+              <div id="statDown" class="stat-value">0 B/s</div>
+              <div id="statDownTotal" class="muted small">累计 0 B</div>
+            </div>
+            <div class="card stat">
+              <div class="stat-label">上传速度</div>
+              <div id="statUp" class="stat-value">0 B/s</div>
+              <div id="statUpTotal" class="muted small">累计 0 B</div>
+            </div>
+            <div class="card stat">
+              <div class="stat-label">活动连接</div>
+              <div id="statConns" class="stat-value">0</div>
+              <div class="muted small">实时连接数</div>
+            </div>
+            <div class="card stat">
+              <div class="stat-label">内存占用</div>
+              <div id="statMem" class="stat-value">0 MB</div>
+              <div id="statMemPct" class="muted small">系统 --</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>代理接入信息</h3></div>
+              <table class="kv" id="endpointTable">
+                <tr><td>HTTP / SOCKS5 混合端口</td><td><span class="endpoint" data-copy="mixed"></span><button class="mini copy" data-copy="mixed">复制</button></td></tr>
+                <tr><td>纯 SOCKS5 端口</td><td><span class="endpoint" data-copy="socks"></span><button class="mini copy" data-copy="socks">复制</button></td></tr>
+                <tr><td>控制面板</td><td><a href="#" id="panelLink" class="link">打开面板</a></td></tr>
+                <tr><td>控制器地址</td><td><span class="endpoint" data-copy="controller"></span><button class="mini copy" data-copy="controller">复制</button></td></tr>
+                <tr><td>Secret</td><td><span id="secretCell" class="muted"></span></td></tr>
+                <tr><td>运行模式</td><td><span id="modeCell">-</span></td></tr>
+              </table>
+              <p class="hint">局域网设备将系统/浏览器代理设置为上方「混合端口」地址即可共享本机网络。</p>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h3>系统与内核信息</h3></div>
+              <table class="kv" id="sysTable">
+                <tr><td>内核版本</td><td id="sysCore">-</td></tr>
+                <tr><td>应用版本</td><td id="sysApp">-</td></tr>
+                <tr><td>主机名</td><td id="sysHost">-</td></tr>
+                <tr><td>当前用户</td><td id="sysUser">-</td></tr>
+                <tr><td>操作系统</td><td id="sysOs">-</td></tr>
+                <tr><td>CPU / 内存</td><td id="sysHw">-</td></tr>
+                <tr><td>运行时长</td><td id="sysUptime">-</td></tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ CONNECTIONS ============ -->
+        <section id="view-connections" class="view">
+          <div class="card">
+            <div class="card-head">
+              <h3>活动连接 <span id="connCount" class="badge">0</span></h3>
+              <input id="connSearch" class="mini-input" placeholder="筛选主机 / 规则 / 链路..." />
+            </div>
+            <div class="table-wrap">
+              <table class="grid" id="connTable">
+                <thead>
+                  <tr><th>主机</th><th>目标</th><th>来源</th><th>类型</th><th>规则</th><th>链路</th><th>上传</th><th>下载</th></tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============ LOGS ============ -->
+        <section id="view-logs" class="view">
+          <div class="card fill">
+            <div class="card-head">
+              <h3>运行日志</h3>
+              <div class="log-tools">
+                <select id="logLevel" class="mini-input">
+                  <option value="all">全部级别</option>
+                  <option value="info">info</option>
+                  <option value="warning">warning</option>
+                  <option value="error">error</option>
+                  <option value="debug">debug</option>
+                </select>
+                <input id="logSearch" class="mini-input" placeholder="搜索日志..." />
+                <label class="check"><input type="checkbox" id="logAuto" checked /> 自动滚动</label>
+                <button id="logClear" class="btn ghost small">清空</button>
+              </div>
+            </div>
+            <div id="logList" class="log-list"></div>
+          </div>
+        </section>
+
+        <!-- ============ SETTINGS ============ -->
+        <section id="view-settings" class="view">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head"><h3>网络与端口</h3></div>
+              <div class="form">
+                <label>混合端口 (HTTP+SOCKS5)<input type="number" id="cfgMixed" /></label>
+                <label>SOCKS5 端口<input type="number" id="cfgSocks" /></label>
+                <label>控制面板端口<input type="number" id="cfgController" /></label>
+                <label>Secret 密码<input type="text" id="cfgSecret" /></label>
+                <label>绑定地址<input type="text" id="cfgBind" /></label>
+                <label class="row">
+                  <span>允许局域网连接 (allow-lan)</span>
+                  <label class="switch small"><input type="checkbox" id="cfgAllowLan" /><span class="slider"></span></label>
+                </label>
+                <label class="row">
+                  <span>启用 IPv6</span>
+                  <label class="switch small"><input type="checkbox" id="cfgIpv6" /><span class="slider"></span></label>
+                </label>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head"><h3>内核与启动</h3></div>
+              <div class="form">
+                <label>运行模式
+                  <select id="cfgMode">
+                    <option value="rule">rule (规则分流)</option>
+                    <option value="global">global (全局代理)</option>
+                    <option value="direct">direct (直连)</option>
+                  </select>
+                </label>
+                <label>日志级别
+                  <select id="cfgLogLevel">
+                    <option value="silent">silent</option>
+                    <option value="error">error</option>
+                    <option value="warning">warning</option>
+                    <option value="info">info</option>
+                    <option value="debug">debug</option>
+                  </select>
+                </label>
+                <label class="row">
+                  <span>开机自动启动应用</span>
+                  <label class="switch small"><input type="checkbox" id="cfgAutostart" /><span class="slider"></span></label>
+                </label>
+                <div class="row">
+                  <span>配置文件</span>
+                  <div class="btn-row">
+                    <button id="btnImport" class="btn ghost small">导入配置</button>
+                    <button id="btnOpenCfg" class="btn ghost small">编辑配置</button>
+                  </div>
+                </div>
+                <div class="row">
+                  <span>数据目录</span>
+                  <button id="btnOpenDir" class="btn ghost small">打开目录</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card actions">
+            <div id="saveHint" class="muted"></div>
+            <div class="btn-row">
+              <button id="btnSave" class="btn primary">保存设置</button>
+              <button id="btnSaveRestart" class="btn">保存并重启</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>
