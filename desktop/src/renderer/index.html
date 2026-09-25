@@ -43,6 +43,7 @@
           </div>
         </div>
         <div class="topbar-right">
+          <button id="themeToggle" class="btn ghost" title="切换深色/浅色主题">◐ 主题</button>
           <button id="btnRestart" class="btn ghost" title="重启内核">↻ 重启</button>
           <label class="switch" title="代理服务器开关">
             <input type="checkbox" id="powerToggle" />
@@ -111,12 +112,15 @@
           <div class="card">
             <div class="card-head">
               <h3>活动连接 <span id="connCount" class="badge">0</span></h3>
-              <input id="connSearch" class="mini-input" placeholder="筛选主机 / 规则 / 链路..." />
+              <div class="log-tools">
+                <label class="check"><input type="checkbox" id="connActiveOnly" /> 仅活动</label>
+                <input id="connSearch" class="mini-input" placeholder="筛选主机 / 规则 / 链路..." />
+              </div>
             </div>
             <div class="table-wrap">
               <table class="grid" id="connTable">
                 <thead>
-                  <tr><th>主机</th><th>目标</th><th>来源</th><th>类型</th><th>规则</th><th>链路</th><th>上传</th><th>下载</th></tr>
+                  <tr><th>状态</th><th>主机</th><th>目标</th><th>来源</th><th>类型</th><th>规则</th><th>链路</th><th>上传</th><th>下载</th></tr>
                 </thead>
                 <tbody></tbody>
               </table>

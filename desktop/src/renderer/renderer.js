@@ -9,6 +9,26 @@ let coreStatus = "stopped";
 let lastStats = {};
 let logBuffer = [];
 
+/* ---------------- theme ---------------- */
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem("mihomo_gw_theme", theme);
+  } catch {}
+}
+
+function initTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem("mihomo_gw_theme");
+  } catch {}
+  const prefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  applyTheme(saved || (prefersLight ? "light" : "dark"));
+}
+
+initTheme();
+
 /* ---------------- formatting ---------------- */
 
 function formatBytes(n) {
@@ -138,23 +158,55 @@ function renderStats(st) {
   }
   $("#connCount").textContent = st.conns || 0;
   if (st.mode) $("#modeCell").textContent = st.mode;
-  renderConnections(st.connections || []);
+  ingestConnections(st.connections || []);
+}
+
+/* Keep recently-closed connections visible for a while so the list does not
+   flicker to empty between short-lived requests. */
+const connMap = new Map();
+const CLOSED_TTL = 15000;
+
+function ingestConnections(list) {
+  const now = Date.now();
+  const ids = new Set();
+  for (const c of list) {
+    ids.add(c.id);
+    const prev = connMap.get(c.id);
+    connMap.set(c.id, { data: c, lastSeen: now, closed: false, closedAt: prev ? prev.closedAt : 0 });
+  }
+  for (const [id, entry] of connMap) {
+    if (!ids.has(id)) {
+      if (!entry.closed) {
+        entry.closed = true;
+        entry.closedAt = now;
+      }
+      if (now - entry.closedAt > CLOSED_TTL) connMap.delete(id);
+    }
+  }
+  renderConnections();
 }
 
 let connSearchTerm = "";
-function renderConnections(list) {
+function renderConnections() {
   const filter = connSearchTerm.toLowerCase();
-  const rows = list
-    .filter((c) => {
+  const activeOnly = $("#connActiveOnly").checked;
+  const entries = Array.from(connMap.values())
+    .filter((e) => (activeOnly ? !e.closed : true))
+    .filter((e) => {
       if (!filter) return true;
+      const c = e.data;
       return (
         (c.host || "").toLowerCase().includes(filter) ||
         (c.rule || "").toLowerCase().includes(filter) ||
         (c.chains || []).join(" ").toLowerCase().includes(filter)
       );
     })
-    .map(
-      (c) => `<tr>
+    .sort((a, b) => (a.closed === b.closed ? b.lastSeen - a.lastSeen : a.closed ? 1 : -1));
+
+  const rows = entries.map((e) => {
+    const c = e.data;
+    return `<tr class="${e.closed ? "closed" : ""}">
+        <td><span class="state-pill ${e.closed ? "closed" : ""}">${e.closed ? "已关闭" : "活动"}</span></td>
         <td title="${escapeHtml(c.host)}">${escapeHtml(c.host) || "-"}</td>
         <td title="${escapeHtml(c.dest)}">${escapeHtml(c.dest) || "-"}</td>
         <td>${escapeHtml(c.source) || "-"}</td>
@@ -163,11 +215,12 @@ function renderConnections(list) {
         <td title="${escapeHtml((c.chains || []).join(" ⇐ "))}">${escapeHtml((c.chains || []).reverse().join(" ⇐ "))}</td>
         <td>${formatBytes(c.upload)}</td>
         <td>${formatBytes(c.download)}</td>
-      </tr>`
-    );
+      </tr>`;
+  });
+
   const tbody = $("#connTable tbody");
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="8" class="empty">暂无活动连接</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="empty">${activeOnly ? "暂无活动连接" : "暂无连接记录"}</td></tr>`;
   } else {
     tbody.innerHTML = rows.join("");
   }
@@ -349,7 +402,14 @@ async function init() {
 
   $("#connSearch").addEventListener("input", (e) => {
     connSearchTerm = e.target.value;
-    renderConnections(lastStats.connections || []);
+    renderConnections();
+  });
+  $("#connActiveOnly").addEventListener("change", renderConnections);
+
+  $("#themeToggle").addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+    applyTheme(next);
+    toast(next === "light" ? "已切换到浅色主题" : "已切换到深色主题");
   });
 
   $("#logLevel").addEventListener("change", rerenderLogs);
